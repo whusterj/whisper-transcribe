@@ -1,0 +1,1 @@
+ffmpeg -i "$1" -vn -ab 128k "$1.mp3";

@@ -1,0 +1,1 @@
+whisper $1 --model small.en --language English -f 'txt'
