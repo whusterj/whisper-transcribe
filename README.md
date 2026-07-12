@@ -47,26 +47,25 @@ To use speaker diarization features:
 
 3. Get your access token from https://huggingface.co/settings/tokens
 
-4. Set it as an environment variable:
+4. Copy `.env.example` to `.env` and fill in your token:
 
-```bash
-export HF_TOKEN="your_token_here"
-```
-
-Add this to your `~/.bashrc` or `~/.zshrc` to make it permanent.
-
-Alternatively, copy `.env.example` to `.env` and fill in your token, then source it before running:
 ```bash
 cp .env.example .env
 # Edit .env with your token
 source .env
 ```
 
+Or export it directly:
+
+```bash
+export HF_TOKEN="your_token_here"
+```
+
 **Important:** You must accept BOTH model agreements before diarization will work!
 
 ## Usage
 
-For long recordings (>1 hour), use the **three-step workflow** to avoid memory issues and ensure consistent speaker labels:
+For long recordings (>1 hour), use the **two-step workflow** to avoid memory issues. Running transcription and diarization together on a single GPU call can exhaust VRAM on recordings of this length.
 
 ### Step 1: Transcribe Without Diarization
 
@@ -76,36 +75,36 @@ For long recordings (>1 hour), use the **three-step workflow** to avoid memory i
 
 This transcribes and aligns the audio without speaker diarization (lower memory usage). Output saved to `./output/`.
 
-### Step 2: Diarize in Chunks
+### Step 2: Diarize
 
 ```bash
 source .env  # Make sure HF_TOKEN is set
-python diarize_chunked_separate.py "meeting-recording.m4a"
+python diarize.py "meeting-recording.m4a" 3 3
 ```
 
-This processes diarization in 30-minute chunks and saves each chunk separately to `./output/meeting-recording_chunks/`. Each chunk file shows which `SPEAKER_XX` labels appear in that segment.
+The second and third arguments are the minimum and maximum number of expected speakers. Setting them equal (e.g. `3 3`) when you know the exact count gives the best results. Diarization runs on the **full audio in a single pass**, so speaker labels (`SPEAKER_00`, `SPEAKER_01`, etc.) are consistent throughout the entire transcript.
 
-### Step 3: Create Speaker Mapping and Merge
+Output is saved to `.output/meeting-recording_diarized.txt`.
 
-1. Review each `chunk_XX.txt` file in the chunks directory
-2. Identify which `SPEAKER_XX` corresponds to which person in each chunk (labels may differ between chunks)
-3. Create `speaker_mapping.json`:
+#### Automatic speaker identification with reference audio (optional)
 
-```json
-{
-  "chunk_01": {"SPEAKER_00": "William", "SPEAKER_01": "Neil", "SPEAKER_02": "Marcy"},
-  "chunk_02": {"SPEAKER_00": "Marcy", "SPEAKER_01": "William", "SPEAKER_02": "Neil"},
-  "chunk_03": {"SPEAKER_00": "William", "SPEAKER_01": "Marcy", "SPEAKER_02": "Neil"}
-}
-```
-
-4. Merge with correct names:
+If you have a clean recording of one or more speakers (30+ seconds of solo speech), you can pass them as reference audio to automatically name the matching cluster:
 
 ```bash
-python merge_chunks.py "meeting-recording.m4a" speaker_mapping.json
+python diarize.py "meeting-recording.m4a" 3 3 \
+  --ref Alice:".data/alice-sample.m4a" \
+  --ref Bob:".data/bob-sample.m4a"
 ```
 
-This creates `./output/meeting-recording_merged.txt` with all speaker names correctly applied!
+The script extracts speaker embeddings from each reference clip, compares them against the clusters found in the meeting, and renames the best-matching labels. Any unmatched speakers retain their `SPEAKER_XX` label for manual renaming.
+
+For speakers without reference audio, rename manually with `sed`:
+
+```bash
+sed -i 's/\[SPEAKER_02\]/[Charlie]/g' .output/meeting-recording_diarized.txt
+```
+
+**Note:** Same-gender speakers with similar voices will have some cross-contamination even with reference audio. Reference clips reduce errors but don't eliminate them entirely.
 
 ### Default Settings
 
@@ -115,27 +114,25 @@ The transcription script uses these defaults:
 - **Output formats:** All formats (JSON, SRT, VTT, TXT, TSV)
 - **Output directory:** `./output/`
 
-Diarization settings:
-- **Chunk size:** 30 minutes (configurable in script)
+Diarization defaults (configurable as CLI args):
 - **Min speakers:** 2
 - **Max speakers:** 4
 
 ### Output Files
 
-Transcription results will be saved in the `./output/` directory with multiple formats:
-- `.json` - Full transcription with word-level timestamps and speaker labels
-- `.srt` - Subtitle format for video
-- `.vtt` - WebVTT format for web videos
-- `.txt` - Plain text transcription
-- `.tsv` - Tab-separated values with timestamps
+Transcription results will be saved in the `./output/` directory:
+- `.json` — Full transcription with word-level timestamps (used by diarization step)
+- `.srt` — Subtitle format for video
+- `.vtt` — WebVTT format for web videos
+- `.txt` — Plain text transcription
+- `.tsv` — Tab-separated values with timestamps
+- `_diarized.txt` — Final transcript with speaker labels
 
 ### Customization
 
 To modify the default settings, edit `transcribe-no-diarize.sh`. Common options:
-- `--model` - Choose model size: `tiny`, `base`, `small`, `medium`, `large-v3`
-- `--min_speakers` / `--max_speakers` - Adjust expected number of speakers
-- `--language` - Set language code (e.g., `es`, `fr`, `de`)
-- Remove `--diarize` if you don't need speaker identification
+- `--model` — Choose model size: `tiny`, `base`, `small`, `medium`, `large-v3`
+- `--language` — Set language code (e.g., `es`, `fr`, `de`)
 
 See `whisperx --help` for all available options.
 
@@ -159,13 +156,6 @@ You may see warnings about version mismatches between the training environment a
 
 If you see ONNX Runtime GPU discovery warnings in WSL2, this is normal. WhisperX will still use your GPU via CUDA.
 
-### Why Three Steps?
+### Speaker Count Hints Ignored
 
-**Memory limitations:** Speaker diarization models are extremely memory-intensive. Even high-end GPUs (like RTX 4090) can run out of VRAM on long recordings when running transcription + diarization together.
-
-**Speaker consistency:** Chunked diarization assigns speaker labels independently per chunk. `SPEAKER_00` in chunk 1 might be a different person than `SPEAKER_00` in chunk 2. The separate-chunks approach lets you identify speakers correctly for each chunk, then merge them with consistent names.
-
-**Tips:**
-- For shorter recordings (<30 min), you might be able to run all steps together
-- Adjust chunk size in `diarize_chunked_separate.py` if needed (larger = fewer chunks but more memory)
-- Use a smaller Whisper model (`medium` or `base`) if transcription runs out of memory
+On some version combinations, `min_speakers`/`max_speakers` may be silently ignored. If you notice more speaker splits than expected, try pinning `whisperx==3.3.1` and `pyannote.audio==3.3.2`.

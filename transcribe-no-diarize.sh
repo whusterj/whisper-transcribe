@@ -16,6 +16,6 @@ fi
 whisperx "$1" \
     --model large-v3 \
     --language en \
-    --output_dir ./output \
+    --output_dir ./.output \
     --output_format all \
     --batch_size 16

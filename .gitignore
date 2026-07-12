@@ -1,4 +1,5 @@
 .venv/
 .data/
 .output/
+output/
 .env
