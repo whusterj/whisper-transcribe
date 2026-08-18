@@ -7,7 +7,7 @@ Usage:
   python diarize.py <audio_file> [min_speakers [max_speakers]] [--ref NAME:file ...]
 
   --ref NAME:file    Reference audio for a known speaker. Can be repeated.
-                     Example: --ref William:".data/william-sample.m4a"
+                     Example: --ref Alice:".data/alice-sample.m4a"
 """
 
 import argparse
@@ -198,7 +198,7 @@ def main():
             print(f"Unmatched speakers (rename manually): {', '.join(sorted(unmatched))}")
     else:
         print("Tip: use --ref to auto-identify speakers from reference audio:")
-        print(f'  python diarize.py "{args.audio_file}" {args.min_speakers} {args.max_speakers} --ref William:.data/sample.m4a')
+        print(f'  python diarize.py "{args.audio_file}" {args.min_speakers} {args.max_speakers} --ref Alice:.data/alice-sample.m4a')
 
 
 if __name__ == "__main__":

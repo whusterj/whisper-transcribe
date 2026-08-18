@@ -9,7 +9,18 @@ Perfect for transcribing meetings, interviews, and other recordings without uplo
 
 ## Installation
 
-This installation has been tested with `Python 3.10` on Ubuntu 20.04 in WSL2. It should work on other platforms as well.
+Tested with `Python 3.10` on Ubuntu 20.04 in WSL2, with an NVIDIA GPU.
+
+`requirements.txt` was pinned on that machine, so it names the CUDA 12.8 wheels.
+Those carry a `platform_system == "Linux"` marker, so pip skips them elsewhere
+and `torch` resolves to the wheel for the host. The same file therefore installs
+on Linux and on macOS.
+
+**On macOS the work runs on the CPU.** `diarize.py` asks for CUDA and falls back
+to the CPU when it is absent, and neither WhisperX nor pyannote.audio is
+dependable on Apple's MPS backend. Transcribing a long recording that way takes
+hours rather than minutes, so treat macOS as somewhere to read and try the code,
+not somewhere to process a meeting.
 
 ### Prerequisites
 
@@ -73,7 +84,7 @@ For long recordings (>1 hour), use the **two-step workflow** to avoid memory iss
 ./transcribe-no-diarize.sh "meeting-recording.m4a"
 ```
 
-This transcribes and aligns the audio without speaker diarization (lower memory usage). Output saved to `./output/`.
+This transcribes and aligns the audio without speaker diarization (lower memory usage). Output saved to `./.output/`.
 
 ### Step 2: Diarize
 
@@ -112,7 +123,7 @@ The transcription script uses these defaults:
 - **Model:** `large-v3` (most accurate)
 - **Language:** English
 - **Output formats:** All formats (JSON, SRT, VTT, TXT, TSV)
-- **Output directory:** `./output/`
+- **Output directory:** `./.output/`
 
 Diarization defaults (configurable as CLI args):
 - **Min speakers:** 2
@@ -120,7 +131,7 @@ Diarization defaults (configurable as CLI args):
 
 ### Output Files
 
-Transcription results will be saved in the `./output/` directory:
+Transcription results will be saved in the `./.output/` directory:
 - `.json` — Full transcription with word-level timestamps (used by diarization step)
 - `.srt` — Subtitle format for video
 - `.vtt` — WebVTT format for web videos

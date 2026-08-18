@@ -2,14 +2,14 @@
 
 # Transcription WITHOUT diarization (saves memory)
 # Usage: ./transcribe-no-diarize.sh <audio_file>
-# Run ./diarize-only.sh afterwards to add speaker labels
+# Run `python diarize.py <audio_file>` afterwards to add speaker labels
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <audio_file>"
     echo "Example: $0 \"meeting-2026-01-10.m4a\""
     echo ""
     echo "This transcribes without diarization (lower memory usage)."
-    echo "Run ./diarize-only.sh afterwards to add speaker labels."
+    echo "Afterwards, add speaker labels with: python diarize.py <audio_file>"
     exit 1
 fi
 
