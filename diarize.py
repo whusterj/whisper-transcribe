@@ -10,16 +10,30 @@ Usage:
                      Example: --ref Alice:".data/alice-sample.m4a"
 """
 
+import os
+
+# pyannote.audio 4 reports anonymous usage to pyannote.ai, and it writes its own
+# default into the environment when you import it. Set the opt-out before that
+# import. Export PYANNOTE_METRICS_ENABLED=1 to send the metrics.
+os.environ.setdefault("PYANNOTE_METRICS_ENABLED", "0")
+
 import argparse
 import json
-import os
 import sys
 import torch
 import numpy as np
 from pathlib import Path
-from pyannote.audio import Inference
+from pyannote.audio import Inference, Model
 from whisperx.diarize import DiarizationPipeline, assign_word_speakers
 from whisperx.audio import load_audio
+
+# pyannote.audio 4 replaces the 3.1 pipeline with community-1. Loading the 3.1
+# config on pyannote.audio 4 downloads the community-1 PLDA anyway, so 3.1 gives
+# no smaller set of gated repositories and a higher diarization error rate.
+DIARIZATION_MODEL = "pyannote/speaker-diarization-community-1"
+
+# Fallback for the speaker embeddings, when the pipeline holds no loaded model.
+EMBEDDING_MODEL = "pyannote/wespeaker-voxceleb-resnet34-LM"
 
 
 def cosine_similarity(a, b):
@@ -30,16 +44,13 @@ def cosine_similarity(a, b):
 
 def get_inference(diarize_model, hf_token, device):
     """Get a speaker embedding inference model, reusing the pipeline's if possible."""
-    try:
-        embedding_model = diarize_model.model.embedding
-        inference = Inference(embedding_model, window="whole")
-    except AttributeError:
-        from pyannote.audio import Model
-        embedding_model = Model.from_pretrained(
-            "pyannote/wespeaker-voxceleb-resnet34-LM",
-            use_auth_token=hf_token,
-        )
-        inference = Inference(embedding_model, window="whole")
+    # The pipeline keeps its loaded embedding model on a private wrapper. Reuse
+    # that model to prevent a second download of the same weights.
+    embedding_wrapper = getattr(diarize_model.model, "_embedding", None)
+    embedding_model = getattr(embedding_wrapper, "model_", None)
+    if embedding_model is None:
+        embedding_model = Model.from_pretrained(EMBEDDING_MODEL, token=hf_token)
+    inference = Inference(embedding_model, window="whole")
     inference.to(torch.device(device))
     return inference
 
@@ -155,8 +166,8 @@ def main():
 
     print("Loading diarization model...")
     diarize_model = DiarizationPipeline(
-        model_name="pyannote/speaker-diarization-3.1",
-        use_auth_token=hf_token,
+        model_name=DIARIZATION_MODEL,
+        token=hf_token,
         device=torch.device(device),
     )
 
