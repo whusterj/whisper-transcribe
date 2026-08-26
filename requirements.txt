@@ -126,7 +126,7 @@ torch_pitch_shift==1.2.5
 torchaudio==2.8.0
 torchmetrics==1.8.2
 tqdm==4.67.1
-transformers==4.57.3
+transformers==5.5.0
 triton==3.4.0 ; platform_system == "Linux"
 typer==0.21.1
 typing_extensions==4.15.0
