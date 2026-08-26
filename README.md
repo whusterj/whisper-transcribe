@@ -44,7 +44,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Note:** This installs PyTorch 2.8 with CUDA 12.8 support. The installation includes patches for compatibility with pyannote.audio models used for speaker diarization.
+**Note:** This installs PyTorch 2.8 with CUDA 12.8 support. No patch is necessary: `pyannote.audio` 4 reads its checkpoints in a format that the `weights_only` default of PyTorch 2.6 and later accepts.
+
+`whisperx` is pinned to the release candidate `3.8.7rc1`. Its code is identical to the `3.8.6` release, but `3.8.6` pins `huggingface-hub<1.0.0`, which holds `transformers` on the 4.x line and keeps three security alerts open. See the header of `requirements.txt`.
 
 ### HuggingFace Token (Required for Diarization)
 
@@ -52,9 +54,8 @@ To use speaker diarization features:
 
 1. Create a HuggingFace account at https://huggingface.co
 
-2. **Accept user agreements for the two required gated models** (click "Agree and access repository" on each page):
-   - https://huggingface.co/pyannote/speaker-diarization-3.1
-   - https://huggingface.co/pyannote/segmentation-3.0
+2. **Accept the user agreement for the gated diarization model** (click "Agree and access repository"):
+   - https://huggingface.co/pyannote/speaker-diarization-community-1
 
 3. Get your access token from https://huggingface.co/settings/tokens
 
@@ -72,7 +73,11 @@ Or export it directly:
 export HF_TOKEN="your_token_here"
 ```
 
-**Important:** You must accept BOTH model agreements before diarization will work!
+**Important:** You must accept the model agreement before diarization will work.
+
+### Telemetry
+
+`pyannote.audio` 4 reports anonymous usage to `pyannote.ai` by default: the origin of the pipeline, its Python class, the duration of each file, and the requested speaker counts. `diarize.py` turns this off. To send the metrics, export `PYANNOTE_METRICS_ENABLED=1` before you run it.
 
 ## Usage
 
@@ -169,4 +174,8 @@ If you see ONNX Runtime GPU discovery warnings in WSL2, this is normal. WhisperX
 
 ### Speaker Count Hints Ignored
 
-On some version combinations, `min_speakers`/`max_speakers` may be silently ignored. If you notice more speaker splits than expected, try pinning `whisperx==3.3.1` and `pyannote.audio==3.3.2`.
+Older version combinations silently ignored `min_speakers`/`max_speakers`. The pinned versions obey them. Do not go back to `whisperx==3.3.1` and `pyannote.audio==3.3.2` to correct speaker splits: those releases carry the `transformers` and `huggingface-hub` versions that this upgrade removed.
+
+### Open torch Alerts
+
+Three Dependabot alerts on `torch` stay open. `whisperx` pins `torch~=2.8.0`, so nothing above 2.8.x can install. All three are memory-corruption bugs in `torch.jit.script`, `torch.lstm_cell`, and `torch.nn.utils.rnn.unpack_sequence`, which this code does not call. Bump `torch` and `torchaudio` when an upstream `whisperx` release widens that pin.
