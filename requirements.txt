@@ -15,6 +15,12 @@
 # torch and torchaudio stay at 2.8.0 because whisperx pins torch~=2.8.0 and
 # torchaudio~=2.8.0. Three Dependabot alerts on torch stay open until an
 # upstream whisperx release widens that pin.
+#
+# nltk 3.10.3 is the latest release, and Dependabot alert 73 (GHSA-8mgp-746c-j5xp)
+# covers every release up to and including it. The fix is merged upstream but
+# not released. The advisory covers the model save and load APIs. whisperx uses
+# nltk only to load the punkt sentence model, so this tool does not reach the
+# affected code. Bump nltk when the next release ships.
 
 aiohappyeyeballs==2.7.1
 aiohttp==3.14.3
