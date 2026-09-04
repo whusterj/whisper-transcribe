@@ -21,6 +21,19 @@
 # not released. The advisory covers the model save and load APIs. whisperx uses
 # nltk only to load the punkt sentence model, so this tool does not reach the
 # affected code. Bump nltk when the next release ships.
+#
+# lightning 2.6.5 and pytorch-lightning 2.6.5 are the latest releases, and
+# Dependabot alert 74 (GHSA-qqmf-gpg7-g8gw) covers them. Upstream merged the fix
+# on 2026-07-14 (commit d710d68), after the 2.6.5 release on 2026-05-27, so no
+# released version has it. The advisory gives 2022.6.15 as the first patched
+# version. That is wrong: 2022.6.15 is an early calendar-numbered release of the
+# lightning package, so a pin to it is a downgrade, not a fix.
+#
+# The vulnerable API is LightningModule.load_from_checkpoint, which
+# pyannote.audio calls in Model.from_pretrained, so this tool does reach the
+# affected code. An attack needs a malicious checkpoint file, and diarize.py
+# loads only the pinned pyannote/* models from Hugging Face. Bump both packages
+# when the next release ships.
 
 aiohappyeyeballs==2.7.1
 aiohttp==3.14.3
