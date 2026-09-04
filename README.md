@@ -179,3 +179,7 @@ Older version combinations silently ignored `min_speakers`/`max_speakers`. The p
 ### Open torch Alerts
 
 Three Dependabot alerts on `torch` stay open. `whisperx` pins `torch~=2.8.0`, so nothing above 2.8.x can install. All three are memory-corruption bugs in `torch.jit.script`, `torch.lstm_cell`, and `torch.nn.utils.rnn.unpack_sequence`, which this code does not call. Bump `torch` and `torchaudio` when an upstream `whisperx` release widens that pin.
+
+### Open lightning Alert
+
+**Load diarization checkpoints only from the pinned `pyannote/*` repositories on Hugging Face.** Dependabot alert 74 (GHSA-qqmf-gpg7-g8gw) covers `lightning` 2.6.5, the latest release, and a checkpoint file from an untrusted source can run arbitrary code through `load_from_checkpoint`, which `pyannote.audio` calls.
