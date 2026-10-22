@@ -16,11 +16,8 @@
 # torchaudio~=2.8.0. Three Dependabot alerts on torch stay open until an
 # upstream whisperx release widens that pin.
 #
-# nltk 3.10.3 is the latest release, and Dependabot alert 73 (GHSA-8mgp-746c-j5xp)
-# covers every release up to and including it. The fix is merged upstream but
-# not released. The advisory covers the model save and load APIs. whisperx uses
-# nltk only to load the punkt sentence model, so this tool does not reach the
-# affected code. Bump nltk when the next release ships.
+# nltk 3.10.4 includes pathsec checks for the model APIs in
+# GHSA-8mgp-746c-j5xp. WhisperX loads the Punkt tokenizer for alignment.
 
 aiohappyeyeballs==2.7.1
 aiohttp==3.14.4
@@ -74,7 +71,7 @@ mdurl==0.1.2
 mpmath==1.3.0
 multidict==6.9.1
 networkx==3.4.2
-nltk==3.10.3
+nltk==3.10.4
 numpy==2.2.6
 nvidia-cublas-cu12==12.8.4.1 ; platform_system == "Linux"
 nvidia-cuda-cupti-cu12==12.8.90 ; platform_system == "Linux"
